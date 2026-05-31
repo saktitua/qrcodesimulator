@@ -97,6 +97,22 @@ async function resolveQr(qrPayload) {
   return JSON.parse(text);
 }
 
+async function resetToScanner() {
+
+  currentTransaction = null;
+
+  document.getElementById("transaction")
+    .style.display = "none";
+
+  document.getElementById("merchant")
+    .innerText = "";
+
+  document.getElementById("amount")
+    .innerText = "";
+
+  await startScanner();
+}
+
 async function pay() {
 
   if (!currentTransaction) {
@@ -133,6 +149,8 @@ async function pay() {
   if (response.ok) {
 
     alert("Pembayaran berhasil");
+
+    await resetToScanner();
 
   } else {
 
@@ -180,7 +198,7 @@ async function onScanSuccess(decodedText) {
       e.message
     );
 
-    startScanner();
+    await resetToScanner();
   }
 }
 
@@ -189,6 +207,21 @@ function onScanFailure(error) {
 }
 
 async function startScanner() {
+
+  try {
+
+    if (html5QrCode) {
+
+      try {
+        await html5QrCode.stop();
+      } catch (_) {}
+
+      try {
+        await html5QrCode.clear();
+      } catch (_) {}
+    }
+
+  } catch (_) {}
 
   html5QrCode =
     new Html5Qrcode("reader");
@@ -210,7 +243,7 @@ async function startScanner() {
   } catch (e) {
 
     console.log(
-      "Environment camera gagal"
+      "Environment camera gagal, mencari kamera belakang..."
     );
 
     try {
@@ -263,7 +296,7 @@ async function startScanner() {
       console.error(err);
 
       alert(
-        "Tidak dapat mengakses kamera"
+        "Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan."
       );
     }
   }
@@ -272,5 +305,6 @@ async function startScanner() {
 startScanner();
 
 </script>
+
 </body>
 </html>
