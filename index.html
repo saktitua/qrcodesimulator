@@ -68,7 +68,7 @@ let html5QrCode = null;
 async function resolveQr(qrPayload) {
 
   const response = await fetch(
-    `${API_BASE}/transaction/resolve`,
+    `${API_BASE}/transactions/resolve`,
     {
       method: "POST",
       headers: {
