@@ -89,10 +89,7 @@ async function resolveQr(qrPayload) {
 
 async function pay() {
 
-  if (!currentTransaction) {
-    alert("Tidak ada transaksi");
-    return;
-  }
+  console.log(currentTransaction);
 
   const response = await fetch(
     `${API_BASE}/_dev/trigger-payment`,
@@ -102,10 +99,17 @@ async function pay() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        transaction_id: currentTransaction.transaction_id
+        transaction_id: currentTransaction.id
       })
     }
   );
+
+  console.log(
+    "trigger-payment",
+    response.status,
+    await response.text()
+  );
+}
 
   if (response.ok) {
     alert("Pembayaran berhasil");
