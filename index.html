@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paprika Pay</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 16px;
+    }
+
+    #reader {
+      width: 100%;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Paprika Pay</h2>
+
+<div id="reader"></div>
+
+<div id="transaction" class="card" style="display:none">
+  <h3 id="merchant"></h3>
+  <p id="amount"></p>
+
+  <button onclick="pay()">
+    Bayar
+  </button>
+</div>
+
+<script>
+
+const API_BASE =
+  "https://yin-voting-goes.ngrok-free.dev/v1";
+
+let currentTransaction = null;
+
+async function resolveQr(qrPayload) {
+
+  const response = await fetch(
+    `${API_BASE}/qris/resolve`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        qr_payload: qrPayload
+      })
+    }
+  );
+
+  return await response.json();
+}
+
+async function pay() {
+
+  const response = await fetch(
+    `${API_BASE}/_dev/trigger-payment`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        transaction_id: currentTransaction.transaction_id
+      })
+    }
+  );
+
+  if (response.ok) {
+    alert("Pembayaran berhasil");
+  } else {
+    alert("Pembayaran gagal");
+  }
+}
+
+const scanner = new Html5QrcodeScanner(
+  "reader",
+  {
+    fps: 10,
+    qrbox: 250
+  }
+);
+
+scanner.render(
+  async (decodedText) => {
+
+    scanner.clear();
+
+    try {
+
+      const trx = await resolveQr(decodedText);
+
+      currentTransaction = trx;
+
+      document.getElementById("merchant").innerText =
+        trx.merchant_name;
+
+      document.getElementById("amount").innerText =
+        "Rp " +
+        Number(trx.amount).toLocaleString("id-ID");
+
+      document.getElementById("transaction").style.display =
+        "block";
+
+    } catch (e) {
+
+      alert("QR tidak dikenali");
+
+      console.error(e);
+    }
+  },
+  (error) => {}
+);
+
+</script>
+
+</body>
+</html>
