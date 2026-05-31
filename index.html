@@ -67,6 +67,8 @@ let html5QrCode = null;
 
 async function resolveQr(qrPayload) {
 
+  console.log("QR Payload:", qrPayload);
+
   const response = await fetch(
     `${API_BASE}/transactions/resolve`,
     {
@@ -80,16 +82,32 @@ async function resolveQr(qrPayload) {
     }
   );
 
+  const text = await response.text();
+
+  console.log(
+    "resolve",
+    response.status,
+    text
+  );
+
   if (!response.ok) {
-    throw new Error("QR tidak valid");
+    throw new Error(text);
   }
 
-  return await response.json();
+  return JSON.parse(text);
 }
 
 async function pay() {
 
-  console.log(currentTransaction);
+  if (!currentTransaction) {
+    alert("Tidak ada transaksi");
+    return;
+  }
+
+  console.log(
+    "PAY TXN:",
+    currentTransaction
+  );
 
   const response = await fetch(
     `${API_BASE}/_dev/trigger-payment`,
@@ -104,17 +122,23 @@ async function pay() {
     }
   );
 
+  const text = await response.text();
+
   console.log(
     "trigger-payment",
     response.status,
-    await response.text()
+    text
   );
-}
 
   if (response.ok) {
+
     alert("Pembayaran berhasil");
+
   } else {
-    alert("Pembayaran gagal");
+
+    alert(
+      `Pembayaran gagal\n\n${text}`
+    );
   }
 }
 
@@ -126,25 +150,35 @@ async function onScanSuccess(decodedText) {
       await html5QrCode.stop();
     }
 
-    const trx = await resolveQr(decodedText);
+    const trx =
+      await resolveQr(decodedText);
+
+    console.log(
+      "Resolved transaction:",
+      trx
+    );
 
     currentTransaction = trx;
 
     document.getElementById("merchant").innerText =
-      trx.merchant_name;
+      trx.merchant_id ?? "-";
 
     document.getElementById("amount").innerText =
       "Rp " +
-      Number(trx.amount).toLocaleString("id-ID");
+      Number(trx.amount)
+        .toLocaleString("id-ID");
 
-    document.getElementById("transaction").style.display =
-      "block";
+    document.getElementById("transaction")
+      .style.display = "block";
 
   } catch (e) {
 
     console.error(e);
 
-    alert("QR tidak dikenali");
+    alert(
+      "QR tidak dikenali\n\n" +
+      e.message
+    );
 
     startScanner();
   }
@@ -156,11 +190,11 @@ function onScanFailure(error) {
 
 async function startScanner() {
 
-  html5QrCode = new Html5Qrcode("reader");
+  html5QrCode =
+    new Html5Qrcode("reader");
 
   try {
 
-    // Prioritas kamera belakang
     await html5QrCode.start(
       {
         facingMode: "environment"
@@ -175,18 +209,26 @@ async function startScanner() {
 
   } catch (e) {
 
-    console.log("Environment camera gagal, mencari kamera belakang...");
+    console.log(
+      "Environment camera gagal"
+    );
 
     try {
 
       const devices =
         await Html5Qrcode.getCameras();
 
-      if (!devices || devices.length === 0) {
-        throw new Error("Kamera tidak ditemukan");
+      if (
+        !devices ||
+        devices.length === 0
+      ) {
+        throw new Error(
+          "Kamera tidak ditemukan"
+        );
       }
 
-      let cameraId = devices[0].id;
+      let cameraId =
+        devices[0].id;
 
       const rearCamera =
         devices.find(device => {
@@ -202,7 +244,8 @@ async function startScanner() {
         });
 
       if (rearCamera) {
-        cameraId = rearCamera.id;
+        cameraId =
+          rearCamera.id;
       }
 
       await html5QrCode.start(
@@ -220,7 +263,7 @@ async function startScanner() {
       console.error(err);
 
       alert(
-        "Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan."
+        "Tidak dapat mengakses kamera"
       );
     }
   }
@@ -229,6 +272,5 @@ async function startScanner() {
 startScanner();
 
 </script>
-
 </body>
 </html>
